@@ -1,15 +1,13 @@
-
 /*
 
- IMU viewer
- Draws a colored cube whose orientation follows the one of the IMU
+IMU viewer
+Draws a colored cube whose orientation follows the one of the IMU
 
- The mouse cas be used to modify manually the orientation.
- Press 'P' and 'M' to zoom in and out.
- 
- The orientation will stabilize after a few second at the beginning.
+The mouse cas be used to modify manually the orientation.
+Press 'P' and 'M' to zoom in and out.
+The orientation will stabilize after a few second at the beginning.
 
- Compilae with : g++ *.cpp -o main -lGL -lGLU -lSDL -lserial -lm -lglut
+Compilae with : g++ *.cpp -o main -lGL -lGLU -lSDL -lserial -lm -lglut
 
 */
 
@@ -24,7 +22,7 @@
 #include <cstdlib>
 
 #include <SerialStream.h>
-#include <stdlib.h>     /* atof */
+#include <stdlib.h> /* atof */
 #include <iostream>
 #include <string>
 #include <cmath>
@@ -38,9 +36,9 @@ using namespace LibSerial;
 SerialStream ardu;
 
 float ORIG[3] = {0,0,0};
-float X[3]    = {1,0,0};
-float Y[3]    = {0,1,0};
-float Z[3]    = {0,0,1};
+float X[3] = {1,0,0};
+float Y[3] = {0,1,0};
+float Z[3] = {0,0,1};
 double sizeCube = 0.5;
 
 
@@ -62,8 +60,8 @@ GLfloat light0Position[] = { 0, 1, 0, 1.0};
 
 
 void MyIdleFunc(void) { glutPostRedisplay();} /* things to do while idle */
-void RunIdleFunc(void) {   glutIdleFunc(MyIdleFunc); }
-void PauseIdleFunc(void) {   glutIdleFunc(NULL); }
+void RunIdleFunc(void) { glutIdleFunc(MyIdleFunc); }
+void PauseIdleFunc(void) { glutIdleFunc(NULL); }
 
 // Split the string according to the delimiter ' '
 std::vector<double> splitData(std::string s);
@@ -87,10 +85,10 @@ void UpdatePosition(std::vector<double> & data)
   double ax=data[4];
   double ay=data[5];
   double az=data[6];
-//  std::cerr << ax << " " << ay << " " << az << std::endl;
+// std::cerr << ax << " " << ay << " " << az << std::endl;
   for( int k=0;k< data.size();++k)
     std::cerr << data[k] << " ";
-  std::cerr <<  std::endl;
+  std::cerr << std::endl;
 
 }
  
@@ -121,8 +119,8 @@ void DisplayCallback(void)
   // Convert string to std::vector<double>
   std::vector<double> data = splitData(s);
 
-//  for(int k=0;k<data.size();++k)
-//    std::cerr << data[k] << std::endl;
+// for(int k=0;k<data.size();++k)
+// std::cerr << data[k] << std::endl;
   
   // Orient the cube
   DrawFromQuaternion(data);
@@ -170,15 +168,15 @@ void MouseCallback(int button, int state, int x, int y)
 {
   downX = x; downY = y;
   leftButton = ((button == GLUT_LEFT_BUTTON) && (state == GLUT_DOWN));
-  middleButton = ((button == GLUT_MIDDLE_BUTTON) &&  (state == GLUT_DOWN));
+  middleButton = ((button == GLUT_MIDDLE_BUTTON) && (state == GLUT_DOWN));
   glutPostRedisplay();
 }
 
 
 //void mouseWheel(int button, int dir, int x, int y)
 //{
-//  
-//  return;
+//
+// return;
 //}
 
 
@@ -195,7 +193,7 @@ void MotionCallback(int x, int y)
   {
     sdepth += (float)(downY - y) / 10.0;
   }
-  downX = x;   downY = y;
+  downX = x; downY = y;
   glutPostRedisplay();
 }
  
@@ -206,14 +204,14 @@ void InitGL()
 {
 
 
-//  SDL_Init(SDL_INIT_VIDEO);
-//  atexit(SDL_Quit);
-//  SDL_WM_SetCaption("IMU viewer", NULL);
-//  SDL_SetVideoMode(640, 480, 32, SDL_OPENGL);
+// SDL_Init(SDL_INIT_VIDEO);
+// atexit(SDL_Quit);
+// SDL_WM_SetCaption("IMU viewer", NULL);
+// SDL_SetVideoMode(640, 480, 32, SDL_OPENGL);
 
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
   glutInitWindowSize(500, 500);
-  glutCreateWindow("cs175 Triangle Viewer");
+  glutCreateWindow("IMU Viewer");
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LEQUAL);
   glClearColor(0.0, 0.0, 0.0, 0.0);
@@ -229,7 +227,7 @@ void InitGL()
   glEnable(GL_LIGHT0);
   glutReshapeFunc(ReshapeCallback);
   glutDisplayFunc(DisplayCallback);
-//  glutMouseWheelFunc(mouseWheel);
+// glutMouseWheelFunc(mouseWheel);
   glutIdleFunc(DisplayCallback);
   glutKeyboardFunc(KeyboardCallback);
   glutMouseFunc(MouseCallback);
@@ -239,15 +237,19 @@ void InitGL()
 
 int main(int argc, char **argv)
 {
-  ardu.Open(PORT);    
-  ardu.SetBaudRate(SerialStreamBuf::BAUD_38400);  
+  ardu.Open(PORT);
+  ardu.SetBaudRate(SerialStreamBuf::BAUD_38400);
   ardu.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
 
   glutInit(&argc, argv);
 
-  InitGL();
+  std::cerr << "koko1"<< std::endl;
 
-  glutMainLoop(); 
+  InitGL();
+  std::cerr << "koko2"<< std::endl;
+
+  glutMainLoop();
+  std::cerr << "koko3"<< std::endl;
   return 0;
 }
 
@@ -255,29 +257,42 @@ int main(int argc, char **argv)
 void DrawFromQuaternion(std::vector<double> & data)
 {
     
-//    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-// 
-//    glMatrixMode( GL_MODELVIEW );
-//    glLoadIdentity( );
+// glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+//
+// glMatrixMode( GL_MODELVIEW );
+// glLoadIdentity( );
  
  
-//    gluLookAt(0,-5,0,0,0,0,0,0,1);
+// gluLookAt(0,-5,0,0,0,0,0,0,1);
 
+    // Quaternion
     double w=data[0];
     double x=data[1];
     double y=data[2];
     double z=data[3];
+    
+    // Acceleration vector
+    double ax=data[4];
+    double ay=data[5];
+    double az=data[6];
+    
+    
+
+    
+    
+    
+    
 
     GLfloat matrix[16];
-    // Column 1                  // Column 2                  // Column 3                  // Column 4
-    matrix[0] = 1-2*(y*y+z*z);   matrix[4] = 2*(x*y-w*z);     matrix[8] = 2*(x*z+w*y);     matrix[12] = 0;
-    matrix[1] = 2*(x*y+w*z);     matrix[5] = 1-2*(x*x+z*z);   matrix[9] = 2*(y*z-w*x);     matrix[13] = 0;
-    matrix[2] = 2*(x*z-w*y);     matrix[6] = 2*(y*z+w*x);     matrix[10] = 1-2*(x*x+y*y);  matrix[14] = 0;
-    matrix[3] = 0;               matrix[7] = 0;               matrix[11] = 0;              matrix[15] = 1;
+    // Column 1 // Column 2 // Column 3 // Column 4
+    matrix[0] = 1-2*(y*y+z*z); matrix[4] = 2*(x*y-w*z); matrix[8] = 2*(x*z+w*y); matrix[12] = 0;
+    matrix[1] = 2*(x*y+w*z); matrix[5] = 1-2*(x*x+z*z); matrix[9] = 2*(y*z-w*x); matrix[13] = 0;
+    matrix[2] = 2*(x*z-w*y); matrix[6] = 2*(y*z+w*x); matrix[10] = 1-2*(x*x+y*y); matrix[14] = 0;
+    matrix[3] = 0; matrix[7] = 0; matrix[11] = 0; matrix[15] = 1;
 
 
     glMultMatrixf(matrix);
-//    glScaled (2 ,2 ,2);
+// glScaled (2 ,2 ,2);
     
     
     glBegin(GL_QUADS);
@@ -322,23 +337,40 @@ void DrawFromQuaternion(std::vector<double> & data)
     glEnd();
 
 
-    // Plot axes
-    glLineWidth (2.0);
 
+
+//    // Plot axes
+//    glLineWidth (2.0);
+
+//    glBegin (GL_LINES);
+//      glColor3f (1,0,0); // X axis is red.
+//      glVertex3fv (ORIG);
+//      glVertex3fv (X);
+//      glColor3f (0,1,0); // Y axis is green.
+//      glVertex3fv (ORIG);
+//      glVertex3fv (Y);
+//      glColor3f (0,0,1); // z axis is blue.
+//      glVertex3fv (ORIG);
+//      glVertex3fv (Z);
+//    glEnd();
+
+    
+    // Plot acceleration vector
+    
+//    glMultTransposeMatrixf(matrix);
+    
+    double normacc=sqrt(ax*ax+ay*ay+az*az);
+    float Acc[3] = {3*ax/normacc,-3*ay/normacc,-3*az/normacc};
+    glLineWidth (2.0);
+    
     glBegin (GL_LINES);
       glColor3f (1,0,0); // X axis is red.
       glVertex3fv (ORIG);
-      glVertex3fv (X);
-      glColor3f (0,1,0); // Y axis is green.
-      glVertex3fv (ORIG);
-      glVertex3fv (Y);
-      glColor3f (0,0,1); // z axis is blue.
-      glVertex3fv (ORIG);
-      glVertex3fv (Z);
+      glVertex3fv (Acc);
     glEnd();
  
-//    glFlush();
-//    SDL_GL_SwapBuffers();
+// glFlush();
+// SDL_GL_SwapBuffers();
 }
 
 
@@ -363,4 +395,5 @@ std::vector<double> splitData(std::string s)
   return res;
 }
  
+
 

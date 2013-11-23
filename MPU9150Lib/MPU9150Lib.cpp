@@ -463,9 +463,9 @@ void MPU9150Lib::printVector(short *vec)
 
 void MPU9150Lib::printVectorQuiet(short *vec)
 {
-  Serial.print(vec[VEC3_X],6);  Serial.print(" ");
-  Serial.print(vec[VEC3_Y],6);  Serial.print(" ");
-  Serial.print(vec[VEC3_Z],6);    
+  Serial.print(vec[VEC3_X]);  Serial.print(" ");
+  Serial.print(vec[VEC3_Y]);  Serial.print(" ");
+  Serial.print(vec[VEC3_Z]);    
 }
 
 void MPU9150Lib::printVector(float *vec)
