@@ -1,0 +1,28 @@
+# Description:
+This program gives a simple dynamic 3D representation an IMU device MPU9150 controlled by an Arduino board.
+
+# Dependencies:
+- SDL
+- OpenGL
+- MPU9150Lib
+Use this version instead of the original (https://github.com/Pansenti/MPU9150Lib).
+
+# Arduino code:
+- IMU9150custom.ino
+Load this script using the Arduino IDE (http://arduino.cc/en/main/software#.Uw-Ta9unui8).
+
+# Compilation of the c++ code
+$ g++ *.cpp -o imuviewer -lGL -lGLU -lSDL -lserial -lm -lglut -std=c++0x -fpermissive
+
+# Wiring
+Arduino   MPU9150
+3v3       VCC
+GND       GND
+A4        SDA
+A5        SDC
+
+# Usage
+Connect the IMU to the Arduino board and the board to the computer with the USB cable. Type 
+$ ./imuviewer
+in the terminal. A window appears, showing a colored cube moving synchronically with the IMU. Press 'p' or 'm' to zoom in or out the scene. You can also rotate the scene using the mouse. Press 'q' to quit.
+

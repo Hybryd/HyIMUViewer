@@ -7,7 +7,8 @@ The mouse cas be used to modify manually the orientation.
 Press 'P' and 'M' to zoom in and out.
 The orientation will stabilize after a few second at the beginning.
 
-Compilae with : g++ *.cpp -o main -lGL -lGLU -lSDL -lserial -lm -lglut
+Compile with:
+g++ *.cpp -o imuviewer -lGL -lGLU -lSDL -lserial -lm -lglut -std=c++0x -fpermissive
 
 */
 
@@ -27,6 +28,9 @@ Compilae with : g++ *.cpp -o main -lGL -lGLU -lSDL -lserial -lm -lglut
 #include <string>
 #include <cmath>
 
+#include <chrono>
+#include <ctime>
+
 #define PORT "/dev/ttyUSB0"
 
 using namespace std;
@@ -35,11 +39,24 @@ using namespace LibSerial;
 
 SerialStream ardu;
 
+std::vector<double> data;
+
 float ORIG[3] = {0,0,0};
 float X[3] = {1,0,0};
 float Y[3] = {0,1,0};
 float Z[3] = {0,0,1};
 double sizeCube = 0.5;
+
+std::chrono::time_point<std::chrono::system_clock> prevtime;
+
+double grav[3] = {0,0,0}; // gravitation of earth
+
+double quat[4] = {0,0,0,0};
+double acc2[3] = {0,0,0};
+double acc1[3] = {0,0,0};
+double acc0[3] = {0,0,0};
+
+double pos[3] = {0,0,0};
 
 
 /* Viewer state */
@@ -64,10 +81,43 @@ void RunIdleFunc(void) { glutIdleFunc(MyIdleFunc); }
 void PauseIdleFunc(void) { glutIdleFunc(NULL); }
 
 // Split the string according to the delimiter ' '
-std::vector<double> splitData(std::string s);
+void splitData(std::string s);
 void DrawFromEuler(std::vector<double> & data);
 void DrawFromQuaternion(std::vector<double> & data);
 
+
+void measureGravitation()
+{
+  double mean[3] = {0,0,0};
+  int nbIter = 100;
+  
+  for(int k=0;k<nbIter;++k)
+  {
+    std::cerr << k << "/" << nbIter << "\r";
+    // read data from IMU
+    char c; // character
+    std::string s("");
+    ardu.get( c ) ;
+    while(c != '#'){ardu.get( c );} // do nothing until we read the end of a block
+    
+    ardu.get( c );
+    while(c != '#')
+    {
+      s += c;
+      ardu.get( c );
+    }
+    splitData(s);
+    
+    mean[0] += data[4];
+    mean[1] += data[5];
+    mean[2] += data[6];
+    
+  }
+  for(int j=0;j<3;++j)
+    grav[j] = mean[j]/nbIter;
+  
+  std::cerr << std::endl;
+}
 
 void ReshapeCallback(int width, int height)
 {
@@ -80,11 +130,48 @@ void ReshapeCallback(int width, int height)
 }
 
 
-void UpdatePosition(std::vector<double> & data)
+//void UpdatePosition(std::vector<double> & data)
+void UpdatePosition()
 {
-  double ax=data[4];
-  double ay=data[5];
-  double az=data[6];
+  for(int k=0;k<4;++k)
+    quat[k] = data[k];
+
+  
+//  // remove gravitation from acceleration
+//  double g[3] = {0,0,0};
+//  
+//  g[0] = 2 * (quat[1] * quat[3] - quat[0] * quat[2]);
+//  g[1] = 2 * (quat[0] * quat[1] + quat[2] * quat[3]);
+//  g[2] = quat[0] * quat[0] - quat[1] * quat[1] - quat[2] * quat[2] + quat[3] * quat[3];
+//  
+//  // update acceleration values in data vector
+//  data[4] = data[4]-g[0]*3675;
+//  data[5] = data[5]-g[1];
+//  data[6] = data[6]-g[2];
+//  
+//  acc0[0] = data[4];
+//  acc0[1] = data[5];
+//  acc0[2] = data[6];
+  
+  // compute dt
+  std::chrono::time_point<std::chrono::system_clock> currtime;
+  currtime = std::chrono::system_clock::now();
+  double dt = std::chrono::duration_cast<std::chrono::microseconds> (currtime-prevtime).count();
+  prevtime = currtime;
+//  std::cerr << "dt: " << dt << std::endl;
+  
+  // compute position
+  for(int k=0;k<3;++k)
+  {
+    pos[k] = dt*dt*(acc0[k] + 2*acc1[k] + acc2[k]);
+    acc2[k] = acc1[k];
+    acc1[k] = acc0[k];
+  }
+  
+  
+  
+  
+  
 // std::cerr << ax << " " << ay << " " << az << std::endl;
   for( int k=0;k< data.size();++k)
     std::cerr << data[k] << " ";
@@ -94,6 +181,7 @@ void UpdatePosition(std::vector<double> & data)
  
 void DisplayCallback(void)
 {
+  std::cerr << "sidpp" << std::endl;
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   gluPerspective(zoom, aspect, zNear, zFar);
@@ -104,7 +192,8 @@ void DisplayCallback(void)
   glRotatef(sphi, 0.0, 0.0, 1.0);
   
   // read data from IMU
-  char c;
+  
+  char c; // character
   std::string s("");
   ardu.get( c ) ;
   while(c != '#'){ardu.get( c );} // do nothing until we read the end of a block
@@ -115,18 +204,24 @@ void DisplayCallback(void)
     s += c;
     ardu.get( c );
   }
+
+  
   
   // Convert string to std::vector<double>
-  std::vector<double> data = splitData(s);
+//  std::vector<double> data = splitData(s);
+  splitData(s);
 
 // for(int k=0;k<data.size();++k)
 // std::cerr << data[k] << std::endl;
   
+  
+  // Move the cube
+  UpdatePosition();
+  
   // Orient the cube
   DrawFromQuaternion(data);
   
-  // Move the cube
-  UpdatePosition(data);
+  
 
 
   glutSwapBuffers();
@@ -137,6 +232,7 @@ void DisplayCallback(void)
 
 void KeyboardCallback(unsigned char ch, int x, int y)
 {
+  std::cerr << "key" << std::endl;
   switch (ch)
   {
     case 27: exit(0);
@@ -158,6 +254,16 @@ void KeyboardCallback(unsigned char ch, int x, int y)
       glOrtho(-1.5 + zoom, 1.0 - zoom, -2.0 + zoom, 0.5 - zoom, -1.0, 3.5); // Changed some of the signs here
     }
     break;
+    
+    // Measure the gravitation. The device must not move
+    case 'g' :
+    {
+      std::cerr << "Before : " << grav[0] << " " << grav[1] << " " << grav[2] << std::endl;
+      measureGravitation();
+      std::cerr << "After : " << grav[0] << " " << grav[1] << " " << grav[2] << std::endl;
+    }
+    break;
+    
   }
   glutPostRedisplay();
 }
@@ -166,6 +272,7 @@ void KeyboardCallback(unsigned char ch, int x, int y)
 
 void MouseCallback(int button, int state, int x, int y)
 {
+  std::cerr << "mouse" << std::endl;
   downX = x; downY = y;
   leftButton = ((button == GLUT_LEFT_BUTTON) && (state == GLUT_DOWN));
   middleButton = ((button == GLUT_MIDDLE_BUTTON) && (state == GLUT_DOWN));
@@ -182,6 +289,7 @@ void MouseCallback(int button, int state, int x, int y)
 
 void MotionCallback(int x, int y)
 {
+  std::cerr << "motion" << std::endl;
    // rotate
   if (leftButton)
   {
@@ -232,31 +340,37 @@ void InitGL()
   glutKeyboardFunc(KeyboardCallback);
   glutMouseFunc(MouseCallback);
   glutMotionFunc(MotionCallback);
+  std::cerr << "Inint" << std::endl;
 }
 
 
 int main(int argc, char **argv)
 {
+  // initialize global variables
+  prevtime = std::chrono::system_clock::now();
+  std::cerr << "koko1" << std::endl;
+  for(int k=0;k<7;++k)
+    data.push_back(0);
+  
   ardu.Open(PORT);
+  std::cerr << "koko2" << std::endl;
   ardu.SetBaudRate(SerialStreamBuf::BAUD_38400);
   ardu.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
+  std::cerr << "koko3" << std::endl;
 
   glutInit(&argc, argv);
-
-  std::cerr << "koko1"<< std::endl;
-
+  std::cerr << "koko4" << std::endl;
   InitGL();
-  std::cerr << "koko2"<< std::endl;
-
+  std::cerr << "koko5" << std::endl;
   glutMainLoop();
-  std::cerr << "koko3"<< std::endl;
+
   return 0;
 }
 
 
 void DrawFromQuaternion(std::vector<double> & data)
 {
-    
+    std::cerr << "quat" << std::endl;
 // glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 //
 // glMatrixMode( GL_MODELVIEW );
@@ -278,10 +392,6 @@ void DrawFromQuaternion(std::vector<double> & data)
     
     
 
-    
-    
-    
-    
 
     GLfloat matrix[16];
     // Column 1 // Column 2 // Column 3 // Column 4
@@ -356,9 +466,6 @@ void DrawFromQuaternion(std::vector<double> & data)
 
     
     // Plot acceleration vector
-    
-//    glMultTransposeMatrixf(matrix);
-    
     double normacc=sqrt(ax*ax+ay*ay+az*az);
     float Acc[3] = {3*ax/normacc,-3*ay/normacc,-3*az/normacc};
     glLineWidth (2.0);
@@ -368,14 +475,19 @@ void DrawFromQuaternion(std::vector<double> & data)
       glVertex3fv (ORIG);
       glVertex3fv (Acc);
     glEnd();
+//    glMultTransposeMatrixf(matrix);
+    
+
  
 // glFlush();
 // SDL_GL_SwapBuffers();
 }
 
 
-std::vector<double> splitData(std::string s)
+//std::vector<double> splitData(std::string s)
+void splitData(std::string s)
 {
+  std::cerr << "split" << std::endl;
 
   std::vector<double> res;
   std::string tmp("");
@@ -392,7 +504,17 @@ std::vector<double> splitData(std::string s)
     ++k;
   }
   res.push_back(atof(tmp.c_str()));
-  return res;
+  
+  if(res.size() == data.size())
+  {
+    for(int k=0;k<data.size();++k)
+      data[k]=res[k];
+  }
+  else
+  {
+    std::cerr << "ERROR in splitData : different sizes" << std::endl;
+  }
+//  return res;
 }
  
 
